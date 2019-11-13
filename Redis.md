@@ -9,6 +9,7 @@
     - [select](#select)
     - [poll](#poll)
     - [epoll](#epoll)
+  - [定时任务](#%E5%AE%9A%E6%97%B6%E4%BB%BB%E5%8A%A1)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -64,10 +65,22 @@ select本质上是通过设置或者检查存放fd标志位的数据结构来进
                                   
 3、需要维护一个用来存放大量fd的数据结构，每次调用select，都需要把fd集合从用户态拷贝到内核态，这个开销在fd很多时会很大，同时每次调用select都需要在内核遍历传递进来的所有fd，这个开销在fd很多时也很大
 
-
+伪代码：
+输入读写描述符列表 read_fds & write_fds，输出与之对应的可读可写事件。同时还提供了一个 timeout 参数，如果没有任何事件到来，那么就最多等待 timeout 时间，线程处于阻塞状态。
+```
+read_events, write_events = select(read_fds, write_fds, timeout)
+for event in read_events:
+    handle_read(event.fd)
+for event in write_events:
+    handle_write(event.fd)
+handle_others() # 处理其它事情，如定时任务等
+```
 ### poll
 
 poll本质上和select没有区别，它将用户传入的数组拷贝到内核空间，然后查询每个fd对应的设备状态，但是它没有最大连接数的限制，原因是它是基于链表来存储的.
 
 ### epoll
 https://www.jianshu.com/p/dfd940e7fca2
+
+## 定时任务
+Redis 的定时任务会记录在一个称为最小堆的数据结构中。这个堆中，最快要执行的任务排在堆的最上方。在每个循环周期，Redis 都会将最小堆里面已经到点的任务立即进行处理。处理完毕后，将最快要执行的任务还需要的时间记录下来，这个时间就是 select 系统调 用的 timeout 参数。因为 Redis 知道未来 timeout 时间内，没有其它定时任务需要处理，所以 可以安心睡眠 timeout 的时间。
