@@ -10,6 +10,7 @@
     - [poll](#poll)
     - [epoll](#epoll)
   - [定时任务](#%E5%AE%9A%E6%97%B6%E4%BB%BB%E5%8A%A1)
+- [TCP三次握手和四次挥手模型](#%E7%BA%BF%E7%A8%8Bio%E6%A8%A1%E5%9E%8B)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -84,3 +85,7 @@ https://www.jianshu.com/p/dfd940e7fca2
 
 ## 定时任务
 Redis 的定时任务会记录在一个称为最小堆的数据结构中。这个堆中，最快要执行的任务排在堆的最上方。在每个循环周期，Redis 都会将最小堆里面已经到点的任务立即进行处理。处理完毕后，将最快要执行的任务还需要的时间记录下来，这个时间就是 select 系统调 用的 timeout 参数。因为 Redis 知道未来 timeout 时间内，没有其它定时任务需要处理，所以 可以安心睡眠 timeout 的时间。
+
+# TCP三次握手和四次挥手模型
+跟着动画学TCP三次握手和四次握手，挺好的一篇文章：
+https://juejin.im/post/5b29d2c4e51d4558b80b1d8c
