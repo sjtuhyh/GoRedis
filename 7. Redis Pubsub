@@ -1,0 +1,63 @@
+# Redis PubSub
+
+## 消息多播
+Redis消息队列的不足之处，那就是它不支持消息的多播机制。
+
+`消息多播`允许生产者生产一次消息，中间件负责将消息复制到多个消息队列，每个消息队列由相应的消费组进行消费。是分布式系统常用的一种解耦方式，用于将多个消费组的逻辑进行拆分。
+
+支持了消息多播，多个消费组的逻辑就可以放到不同的子系统中。
+
+## PubSub
+为了支持消息多播，Redis 不能再依赖于那 5 种基本数据类型了。它单独使用了一个模块来支持消息多播，这个模块的名字叫着`PubSub`, 发布者订阅者模型
+
+Redis PubSub 的生产者和消费者是不同的连接，也就是实际上使用了两个 Redis 的连接。这是必须的，因为 Redis 不允许连接在 subscribe 等待消息时还要进行其它的操作。
+
+在生产环境中，我们很少将生产者和消费者放在同一个线程里。如果它们真要在同一个线程里，何必通过中间件来流转，直接使用函数调用就行。所以我们应该将生产者和消费者分离。
+
+![image](https://user-images.githubusercontent.com/34932312/70314233-0b0ce200-1852-11ea-964c-3f6a91f34df8.png)
+
+```
+消费者
+# -*- coding: utf-8 -*- 
+import time
+import redis
+client = redis.StrictRedis() 
+p = client.pubsub() 
+p.subscribe("codehole") 
+while True:
+    msg = p.get_message() 
+    if not msg:
+        time.sleep(1)
+        continue 
+    print msg
+
+生产者
+# -*- coding: utf-8 -*- 
+import redis
+client = redis.StrictRedis() 
+client.publish("codehole", "python comes") 
+client.publish("codehole", "java comes") 
+client.publish("codehole", "golang comes")    
+```
+必须先启动消费者，然后再执行生产者，消费者我们可以启动多个，pubsub 会保证它们 收到的是相同的消息序列。
+```
+{'pattern': None, 'type': 'subscribe', 'channel': 'codehole', 'data': 1L}
+{'pattern': None, 'type': 'message', 'channel': 'codehole', 'data': 'python comes'} 
+{'pattern': None, 'type': 'message', 'channel': 'codehole', 'data': 'java comes'} 
+{'pattern': None, 'type': 'message', 'channel': 'codehole', 'data': 'golang comes'}
+```
+我们从消费者的控制台窗口可以看到上面的输出，每个消费者窗口都是同样的输出。第一行是订阅成功消息，它很快就会输出，后面的三行会在生产者进程执行的时候立即输出。
+上面的消费者是通过轮询 get_message 来收取消息的，如果收取不到就休眠 1s。这让我们想起了之前的消息队列模型，我们使用 blpop 来代替休眠来提高消息处理的及时性。
+我们可以使用 listen 来阻塞监听消息来进行处理，这点同 blpop 原理是一样的
+```
+阻塞消费者
+# -*- coding: utf-8 -*- 
+import time
+import redis
+
+client = redis.StrictRedis() 
+p = client.pubsub() 
+p.subscribe("codehole") 
+for msg in p.listen():
+    print msg
+```
