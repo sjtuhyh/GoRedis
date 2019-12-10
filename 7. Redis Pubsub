@@ -73,3 +73,18 @@ for msg in p.listen():
 2) "codehole.*" 
 3) (integer) 1
 ```
+
+## 消息结构
+前面的消费者消息输出时都是下面的这样一个字典形式
+```
+{'pattern': None, 'type': 'subscribe', 'channel': 'codehole', 'data': 1L}
+{'pattern': None, 'type': 'message', 'channel': 'codehole', 'data': 'python comes'} 
+{'pattern': None, 'type': 'message', 'channel': 'codehole', 'data': 'java comes'} 
+{'pattern': None, 'type': 'message', 'channel': 'codehole', 'data': 'golang comes'}
+```
+data 这个毫无疑问就是消息的内容，一个字符串。
+channel 这个也很明显，它表示当前订阅的主题名称。
+type 它表示消息的类型，如果是一个普通的消息，那么类型就是 message，如果是控制消息，比如订阅指令的反馈，它的类型就是 subscribe，如果是模式订阅的反馈，它的类型就 是 psubscribe，还有取消订阅指令的反馈 unsubscribe 和 punsubscribe。
+pattern 它表示当前消息是使用哪种模式订阅到的，如果是通过 subscribe 指令订阅的， 那么这个字段就是空。
+
+
