@@ -61,3 +61,15 @@ p.subscribe("codehole")
 for msg in p.listen():
     print msg
 ```
+
+## 模式订阅
+上面提到的订阅模式是基于名称订阅的，消费者订阅一个主题是必须明确指定主题的名称。
+
+为了简化订阅的繁琐，redis 提供了模式订阅功能 Pattern Subscribe，这样就可以一次订阅多个主题
+
+```
+> psubscribe codehole.*  # 用模式匹配一次订阅多个主题，主题以 codehole. 字符开头的消息都可以收到
+1) "psubscribe" 
+2) "codehole.*" 
+3) (integer) 1
+```
