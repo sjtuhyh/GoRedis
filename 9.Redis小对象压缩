@@ -1,0 +1,37 @@
+# Redis小对象压缩
+
+## 32bit vs 64bit
+Redis 如果使用 32bit 进行编译，内部所有数据结构所使用的指针空间占用会少一半
+
+如果你对 Redis 使用内存不超过 4G，可以考虑使用 32bit 进行编译，可以节约大量内存。4G 的容量作为一些小型站点的缓存数据库是绰绰有余了，如果不足还可以通过增加实例的方式来解决。
+
+## 小对象压缩存储ziplist
+如果 Redis 内部管理的集合数据结构很小，它会使用`紧凑存储形式压缩存储`。这就好比 HashMap 本来是二维结构，但是如果内部元素比较少，使用二维结构反而浪费空间，还不如使用一维数组进行存储，需要查找时，因为元素少进行遍历也很快，甚至可以比 HashMap 本身的查找还要快。
+
+Redis 的 ziplist 是一个`紧凑的字节数组结构`，如下图所示，每个元素之间都是紧挨着的。
+
+![image](https://user-images.githubusercontent.com/34932312/70512514-d4dda400-1b6a-11ea-8d65-05c374a63441.png)
+
+如果存储的是 hash 结构，那么 key 和 value 会作为`两个 entry `相邻存在一起。
+```
+127.0.0.1:6379> hset hello a 1 (integer) 
+1
+127.0.0.1:6379> hset hello b 2 (integer) 
+1
+127.0.0.1:6379> hset hello c 3 (integer) 
+1
+127.0.0.1:6379> object encoding hello 
+"ziplist"
+```
+
+如果它存储的是 zset，那么 value 和 score 会作为`两个 entry `相邻存在一起。
+```
+127.0.0.1:6379> zadd world 1 a (integer) 
+1
+127.0.0.1:6379> zadd world 2 b (integer) 
+1
+127.0.0.1:6379> zadd world 3 c (integer) 
+1
+127.0.0.1:6379> object encoding world 
+"ziplist"
+```
